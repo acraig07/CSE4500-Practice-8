@@ -66,3 +66,26 @@ Route::get('/callback', function (Request $request) {   //Get Token after author
         return redirect()->route('authorization');
     }
 });
+
+Route::get('/callback', function (Request $request) {
+    $state = $request->session()->pull('state');
+    if(strlen($state) > 0 && $state === $request->state) {
+          $response = Http::asForm()->post('http://localhost:8001/oauth/token (Links to an external site.)', [
+              'grant_type' => 'authorization_code',
+              'client_id' => '8',
+              'client_secret' => 'secret',
+              'redirect_uri' => 'http://localhost:8000/callback (Links to an external site.)',
+              'code' => $request->code,
+          ]);
+          $accessToken = $response->json()['access_token'];
+          //Use the token to request data
+          $response = Http::withHeaders([
+              'Accept' => 'application/json',
+              'Authorization' => 'Bearer '.$accessToken,
+          ])->get('http://localhost:8001/api/users');
+
+          return $response->json();
+      } else {
+          return redirect()->route('authorization');
+      }
+  });
